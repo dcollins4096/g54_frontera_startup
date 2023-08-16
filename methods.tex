@@ -1,0 +1,66 @@
+For the full proposal, we will perform two studies.  One will target small scale
+structures using simulations of driven magnetized turbulence.  The other will
+target large scale features and variation by simulating isolated galaxies.  Our
+scaling study will reflect these two use cases.  
+
+
+The code we will use is Enzo \citep{Collins10,Bryan14}, an open source code that
+has been used for a number of astrophysics applications
+\citep{Abel02,CorreaMagnus23}.  Enzo is an adaptive mesh refinement (AMR) code
+that dynamically adds resolution elements as the system requires it.  We will
+use the constrained transport (CT) module \citep{Collins10} that conserves the
+divergence of the field to machine precision.  It uses FFT-based gravity for the
+root grid and multigrid relaxation for gravity on fine grids.  The base MHD
+solver is a higher order Godunov method.  
+
+
+There are three major numerical systems that need to be profiled:  the hydro
+solver, the gravity solver, and the AMR machinery.  The hydro solver alone is
+entirely local, and has been demonstrated to scale quite well.  The gravity
+solver uses an additional FFT to solve the gravity which will have its own
+scaling properties.  Finally the AMR machinery that communicates the solution
+between coarse and fine patches scales less well than the other two.  We will
+thus perform three suites of weak scaling with the three dominant packages.  The
+MHD suite will use only the MHD solver; the Gravity suite will use MHD and
+gravity; and finally the AMR suite will incorporate AMR as well as MHD and
+gravity.  In practice the AMR grid layout is chaotic.  For simplicity and
+reproducibility we will use three levels, with the two refined regions covering
+half the box length (1/8 of the total volume), keeping the same number of zones
+per level.  None of the main numerical packages have costs that depend on the
+state of the gas, so we will use uniform density and temperature.
+
+The cost of the scaling study, $SU$, is found as 
+\begin{align}
+SU &= t_{\rm{wall}} N_{N}\\
+t_{\rm{wall}} &= \frac{N_{Z} N_{U}}{\zeta} \frac{1}{N_{C}},
+\end{align}
+where $\zeta$ is the performance of the code in zone-updates/core-second, $N_Z$
+is the number of zones, $N_U$ is the number of updates, $N_{C}$ is the number of
+cores, and $N_N$ is the number of nodes.  The performance, $\zeta$, is
+in principle independent of the size of the problem, and only depends on the
+numerical package used.  This is unknown on Frontera, and its measurement in fact the purpose
+of the scaling study.  We will use the values obtained from previous scaling
+studies on \emph{Stampede 2}, which will be somewhat lower than Frontera but
+will give the right ballpark.  
+
+We will use 56 cores per node and fixed work of $64^3$ root grid zones per core.
+The number of root grid zones will be $256^3$, $512^3$, $1024^3$ and $2048^3$.
+This leaves one node underutilized for each run, which will not impact our
+results much.  We will take 100 root grid time steps for each of our
+simulations.  For the AMR suite, each subgrid takes on average two steps per
+parent.  Since all three levels have the same number of zones,  this is
+equivalent to 700 steps of one level.  
+This number of time steps was chosen to account for the inevitable repetition
+of the suite as we optimize our build for Frontera.
+
+\input{tableX}
+
+Table \ref{table2} shows a breakdown of the cost of the scaling study, and
+includes the value of $\zeta$ used for each suite.  The first column shows the
+package, the MHD solver, MHD with Gravity, and AMR with MHD and Gravity.  
+The second column shows the number
+of zones per run, the third column shows the number of nodes to be used, the
+fourth column shows the anticipated performance, $\zeta$, and the final column
+shows the total cost.  
+
+
